@@ -1,69 +1,62 @@
-# DA4 Term Project: Air Quality and Environmental Policy in European Cities
+# COVID-19 Restrictions and Air Quality in European Cities
+
+DA4 Term Project — Central European University
 
 ## Research Question
 
-**Does the introduction of low-emission zones (LEZs) or diesel bans in European cities reduce air pollution?**
+Do stricter COVID-19 restrictions reduce urban air pollution? We use panel data on 120 cities across 9 European countries (2020--2022) to estimate the causal effect of the Oxford Stringency Index on NO2 concentrations using a two-way fixed effects framework.
 
-## Summary
-
-We use city-level air quality panel data from the [Air Quality API](https://aqicn.org/api/) (or OpenAQ) combined with policy intervention data to estimate the causal effect of environmental regulations on air pollution outcomes. The treatment is the adoption of a **Low Emission Zone (LEZ)** — a geographically defined area where vehicle access is restricted based on emission standards (e.g., diesel bans, Euro-norm requirements).
-
-## Treatment: Low Emission Zones (LEZs)
-
-- LEZs have been rolled out **at different times** across European cities — this staggered adoption is key for identification
-- Data on LEZ adoption dates and scope is available from [Urban Access Regulations](https://urbanaccessregulations.eu/) and Eurostat
-- Recommended measure: **binary indicator** for whether a city has an active LEZ in a given period (month/quarter)
-
-## Identification Strategy
-
-- **Difference-in-Differences (DiD)** or **Event Study** exploiting staggered LEZ rollout across cities
-- Treated group: cities that adopt LEZs; Control group: cities that have not (yet) adopted
-- Event study to visualize pre-trends and dynamic treatment effects
-
-## Key Considerations
-
-- **Parallel trends**: check with event-study plot; pre-treatment trends should be flat
-- **Differential trends**: cities adopting LEZs may already be on different pollution trajectories — control for:
-  - Urbanisation level (population density, urban/rural classification)
-  - Economic activity (GDP per capita, from Eurostat)
-  - Weather/seasonality (temperature, wind — from weather APIs)
-  - Traffic volume if available
-- **Spillover effects**: LEZs in one city may divert traffic to neighboring cities — could test for this as an extension
-- **Heterogeneity**: effects may differ by city size, strictness of the LEZ, baseline pollution level
-
-## Data
-
-| Variable | Source | Role |
-|---|---|---|
-| Air quality (PM2.5, PM10, NO2) | Air Quality API / OpenAQ | **Outcome (Y)** |
-| LEZ adoption (date, scope) | Urban Access Regulations / Eurostat | **Treatment (X)** |
-| Population / urbanisation | Eurostat | Control |
-| GDP per capita (regional) | Eurostat | Control |
-| Weather (temp, wind) | Weather API | Control |
-
-- **Panel structure**: city × month (or quarter)
-- Target: N ≥ 100 cities, T ≥ 12 periods (monthly data over several years)
-
-## Robustness & Extensions
-
-- Alternative pollution measures (PM2.5 vs NO2)
-- Varying treatment definition (strictness levels of LEZ)
-- Placebo tests with fake adoption dates
-- Spillover analysis on neighboring non-LEZ cities
-- Heterogeneity by city size or baseline pollution
-
-## Project Structure
+## Folder Structure
 
 ```
 da4_term_project/
 ├── README.md
+├── LICENSE
 ├── code/
-│   ├── 01_data_cleaning.ipynb
-│   └── 02_analysis.ipynb
+│   ├── 1_covid_data_clean.ipynb       # Download & clean COVID policy data
+│   ├── 2_pollution_data_download.ipynb # Download raw air quality data from AQICN
+│   ├── 3_data_cleaning.ipynb          # Merge, clean, descriptive statistics
+│   └── 4_causal_analysis.ipynb        # FE regressions, event study, robustness
 ├── data/
-│   ├── raw/
-│   └── clean/
+│   ├── raw/                           # Raw downloaded data (not transformed)
+│   │   ├── covid_level1.csv
+│   │   └── aqicn_all_cities_raw.csv
+│   └── clean/                         # Analysis-ready datasets
+│       ├── city_country_mapping.csv
+│       ├── covid_policy_national.csv
+│       └── panel_city_day.csv
 └── output/
-    ├── figures/
+    ├── figures/                        # All plots (event study, time series, etc.)
     └── tables/
 ```
+
+## Notebooks
+
+| # | Notebook | What it does |
+|---|---------|-------------|
+| 1 | `1_covid_data_clean.ipynb` | Downloads national COVID-19 policy data via the `covid19dh` package for 9 EU countries. Extracts stringency index, individual policy indicators, and case counts. Builds a 126-city mapping. |
+| 2 | `2_pollution_data_download.ipynb` | Downloads 12 quarterly CSVs (2020Q1--2022Q4) from the AQICN COVID-19 data platform. Filters to target cities, saves raw long-format data. |
+| 3 | `3_data_cleaning.ipynb` | Pivots pollution data to wide format, analyzes missingness, merges with COVID policy data on country x date, drops 6 low-coverage cities, engineers features (log transforms, lags, time variables), produces descriptive statistics and visualizations. |
+| 4 | `4_causal_analysis.ipynb` | Estimates progressive FE specifications (pooled OLS through TWFE + weather + country trends), event study around first major lockdown, robustness checks (alternative outcomes, leave-Italy-out, log vs. levels), and country-level heterogeneity analysis. |
+
+## Reproduction
+
+**Requirements:** Python 3.9+, Jupyter Notebook
+
+```bash
+pip install pandas numpy matplotlib seaborn pyfixest covid19dh
+```
+
+**Steps:**
+
+1. Run `1_covid_data_clean.ipynb` — downloads COVID data via `covid19dh` (requires internet)
+2. Run `2_pollution_data_download.ipynb` — downloads AQICN data (requires internet; ~5 min)
+3. Run `3_data_cleaning.ipynb` — merges and cleans; produces `panel_city_day.csv`
+4. Run `4_causal_analysis.ipynb` — runs all regressions and generates figures
+
+If `data/raw/` files already exist, notebooks 1--2 skip the download automatically.
+
+## Data Sources
+
+- **COVID-19 policy data**: [COVID-19 Data Hub](https://covid19datahub.io/) via the `covid19dh` Python package (Guidotti & Ardia, 2020)
+- **Air quality data**: [AQICN COVID-19 Data Platform](https://aqicn.org/data-platform/covid19/) — daily city-level pollutant and weather measurements
